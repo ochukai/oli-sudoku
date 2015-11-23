@@ -1,0 +1,12 @@
+.sudoku-wrapper {
+  width: 460px;
+  /*min-width: 300px;*/
+  /*max-width: 600px;*/
+  margin: 60px auto;
+  font-size: 24px;
+}
+
+.sudoku-wrapper td {
+  vertical-align: middle;
+  text-align: center;
+}
