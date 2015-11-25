@@ -80,11 +80,6 @@
     };
 
     Sudoku.prototype.calculate = function () {
-        if (_.isUndefined(this.currentState)) {
-            console.log('over');
-            return;
-        }
-
         this.currentState.hasBlank = false;
         this.currentState.hasZeros = false;
 
@@ -106,7 +101,7 @@
                 var avails = this.available(j, i);
                 if (avails.length === 0) {
                     this.currentState.hasZeros = true;
-                    return false;
+                    return false; // break
                 }
 
                 dummy.push({
@@ -260,7 +255,6 @@
 
                 sudoku.render();
             }, 1000);
-
         });
 
     });
