@@ -22,29 +22,16 @@
     }
 
     var Sudoku = function (soduku) {
-        var dummy = [
-            [0, 0, 0, 0, 3, 4, 8, 0, 1],
-            [4, 0, 0, 0, 0, 0, 7, 0, 0],
-            [0, 3, 0, 8, 7, 0, 0, 2, 4],
-            [8, 7, 0, 0, 0, 0, 0, 0, 0],
-            [2, 0, 0, 5, 4, 1, 0, 0, 8],
-            [0, 0, 0, 0, 0, 0, 0, 4, 2],
-            [3, 1, 0, 0, 8, 7, 0, 9, 0],
-            [0, 0, 9, 0, 0, 0, 0, 0, 7],
-            [7, 0, 6, 4, 9, 0, 0, 0, 0]
-        ];
-
-        this.origin = soduku || dummy;
         // [1, 2, 3, 4, 5, 6, 7, 8, 9];
         this.nines = _.range(1, 10);
 
+        this.origin = soduku;
+
+        // a stack save every state.
         this.snapshots = [];
-        this.currentState = {
-            sudoku: deepCopy(this.origin)
-            // target:
-            // index:
-            // avails:
-        };
+
+        this.currentState = {};
+        this.currentState.sudoku = deepCopy(this.origin);
     };
 
     Sudoku.prototype.push = function () {
@@ -54,21 +41,13 @@
             target: _.result(this.currentState, 'target')
         });
 
+        // clear current state
         delete this.currentState.index;
         delete this.currentState.target;
-
-        console.log('snapshot length:', this.snapshots.length);
     };
 
     Sudoku.prototype.pop = function () {
         return this.snapshots.pop();
-    };
-
-    Sudoku.prototype.toLastState = function () {
-        this.currentState = this.pop();
-        console.log('unsolvable, to last state, length:', this.snapshots.length);
-
-        this.tryNext();
     };
 
     /**
@@ -79,12 +58,15 @@
      */
     Sudoku.prototype.available = function (x, y) {
         var target = this.currentState.sudoku;
+
         // get row
         var related = _.clone(target[y]);
+
         // get col
         _.each(target, function (row) {
             related.push(row[x]);
         });
+
         // get square
         var rangeX = range(x);
         var rangeY = range(y);
@@ -103,13 +85,17 @@
             return;
         }
 
+        this.currentState.hasBlank = false;
+        this.currentState.hasZeros = false;
+
         var dummy = [];
         var target = this.currentState.sudoku;
-        this.currentState.hasBlank = false;
 
-        // break    -- return false;
-        // continue -- return true;﻿
         _.each(target, function (row, i) {
+            if (this.currentState.hasZeros) {
+                return false;  // break: return false;
+            }
+
             _.each(row, function (num, j) {
                 if (num !== 0) {
                     return;
@@ -118,14 +104,17 @@
                 this.currentState.hasBlank = true;
 
                 var avails = this.available(j, i);
+                if (avails.length === 0) {
+                    this.currentState.hasZeros = true;
+                    return false;
+                }
+
                 dummy.push({
                     x: j,
                     y: i,
                     avails: avails,
                     count: avails.length
                 });
-
-                //console.log('(', j, ',', i, ')', avails);
             }, this);
         }, this);
 
@@ -134,10 +123,9 @@
     };
 
     Sudoku.prototype.sort = function () {
-        var dummy = this.currentState.avails;
-        this.currentState.avails = _.sortBy(dummy, function (item) {
+        this.currentState.avails = _.sortBy(this.currentState.avails, function (item) {
             return item.count;
-        }, this);
+        });
     };
 
     Sudoku.prototype.hasBlank = function () {
@@ -150,9 +138,7 @@
      * @returns {boolean}
      */
     Sudoku.prototype.unsolvable = function () {
-        return _.any(this.currentState.avails, function (item) {
-            return item.count === 0;
-        });
+        return this.currentState.hasZeros;
     };
 
     /**
@@ -166,14 +152,15 @@
         });
     };
 
-    /**
-     *
-     * @returns {*}
-     */
     Sudoku.prototype.hasOne = function () {
         return _.any(this.currentState.avails, function (item) {
             return item.count === 1;
         });
+    };
+
+    Sudoku.prototype.toLastState = function () {
+        this.currentState = this.pop();
+        this.tryNext();
     };
 
     Sudoku.prototype.fill = function () {
@@ -190,30 +177,19 @@
 
             this.calculate();
         }
-
-        console.log('end.');
     };
 
     Sudoku.prototype.tryNext = function () {
         var dummy = this.currentState.target;
 
-        var x = dummy.x;
-        var y = dummy.y;
-
-        this.currentState.index++;
-        var index = this.currentState.index;
+        var index = ++this.currentState.index;
         if (index === dummy.avails.length) {
-            // unsolvable
             this.toLastState();
             return;
         }
 
         this.push();
-
-        var currentValue = dummy.avails[index];
-        this.fillOne(x, y, currentValue);
-
-        console.log('try (', x, ',', y, ') avails[', index, '] =', currentValue);
+        this.fillOne(dummy.x, dummy.y, dummy.avails[index]);
     };
 
     Sudoku.prototype.fillMulti = function () {
@@ -221,15 +197,15 @@
             this.currentState.target = _.first(this.currentState.avails);
         }
 
-        var index = _.isUndefined(this.currentState.index) ? -1 : this.currentState.index;
-        this.currentState.index = index;
+        if (_.isUndefined(this.currentState.index)) {
+            this.currentState.index = -1;
+        }
 
         this.tryNext();
     };
 
     Sudoku.prototype.fillOnes = function () {
-        var ones = this.ones();
-        _.each(ones, function (item) {
+        _.each(this.ones(), function (item) {
             this.fillOne(item.x, item.y, item.avails[0]);
         }, this);
     };
@@ -269,15 +245,22 @@
             [0, 9, 0, 0, 7, 0, 0, 0, 6],
             [0, 0, 0, 0, 0, 0, 8, 0, 0]
         ];
+
         var sudoku = new Sudoku(veryDifficult1);
         sudoku.render();
 
         $('#calculate').on('click', function () {
-            var start = new Date();
-            sudoku.fill();
+            sudoku = new Sudoku(veryDifficult1);
             sudoku.render();
 
-            console.log('spend:', (new Date() - start));
+            setTimeout(function() {
+                var start = new Date();
+                sudoku.fill();
+                console.log('spend:', (new Date() - start));
+
+                sudoku.render();
+            }, 1000);
+
         });
 
     });
