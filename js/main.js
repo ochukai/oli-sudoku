@@ -13,6 +13,24 @@
         return [end - 3, end - 1];
     }
 
+    /**
+     * square:
+     *  11, 21, 31
+     *  12, 22, 32
+     *  13, 23, 33
+     *
+     * @param x
+     * @param y
+     * @returns {*} current pos
+     */
+    function square(x, y) {
+        var pos = function (n) {
+            return Math.ceil((n + 1) / 3);
+        };
+
+        return pos(x) * 10 + pos(y);
+    }
+
     function deepCopy(arr) {
         return _.map(arr, function (row) {
             return _.map(row, function (item) {
@@ -32,18 +50,22 @@
 
         this.currentState = {};
         this.currentState.sudoku = deepCopy(this.origin);
+
+        this.calculate();
     };
 
     Sudoku.prototype.push = function () {
         this.snapshots.push({
             sudoku: deepCopy(_.result(this.currentState, 'sudoku')),
             index: _.result(this.currentState, 'index'),
-            target: _.result(this.currentState, 'target')
+            target: _.clone(_.result(this.currentState, 'target'))
         });
 
         // clear current state
         delete this.currentState.index;
         delete this.currentState.target;
+
+        //console.log('snapshot length:', this.snapshots.length);
     };
 
     Sudoku.prototype.pop = function () {
@@ -80,6 +102,8 @@
     };
 
     Sudoku.prototype.calculate = function () {
+        console.log('----------------------- begin calculate ---------------------------');
+
         this.currentState.hasBlank = false;
         this.currentState.hasZeros = false;
 
@@ -107,14 +131,84 @@
                 dummy.push({
                     x: j,
                     y: i,
+                    square: square(j, i),
                     avails: avails,
                     count: avails.length
                 });
+
+                console.log('(', j, ',', i, ')', avails);
             }, this);
         }, this);
 
+        console.log('------------- after calculate before check ----', dummy.length, '----------------');
+
         this.currentState.avails = dummy;
         this.sort();
+
+        if (!this.check()) {
+            this.toLastState();
+            this.calculate();
+        }
+    };
+
+    Sudoku.prototype.check = function () {
+        var ones = this.ones();
+        if (ones.length <= 1) {
+            return true;
+        }
+
+        var grouped = _.groupBy(ones, function (item) {
+            return item.avails[0];
+        });
+
+        if (_.keys(grouped).length === ones.length) {
+            return true
+        }
+
+        var multi = _.filter(_.values(grouped), function (items) {
+            return items.length > 1;
+        });
+
+        var valid = true;
+        _.each(multi, function (items) {
+            var len = items.length;
+
+            // not in same column
+            var xs = _.uniq(_.map(items, function (item) {
+                return item.x;
+            }));
+
+            if (xs.length !== len) {
+                //console.log('error in same column', items);
+                valid = false;
+                return false;
+            }
+
+            // not in same row
+            var ys = _.uniq(_.map(items, function (item) {
+                return item.y;
+            }));
+
+            if (ys.length !== len) {
+                //console.log('error in same row', items);
+                valid = false;
+                return false;
+            }
+
+            // not in same square
+            var squares = _.uniq(_.map(items, function (item) {
+                return item.square;
+            }));
+
+            if (squares.length !== len) {
+                //console.log('error in same square', items);
+                valid = false;
+                return false;
+            }
+
+        }, this);
+
+        return valid;
     };
 
     Sudoku.prototype.sort = function () {
@@ -155,12 +249,11 @@
 
     Sudoku.prototype.toLastState = function () {
         this.currentState = this.pop();
+        //console.log('unsolvable, to last state, length:', this.snapshots.length);
         this.tryNext();
     };
 
     Sudoku.prototype.fill = function () {
-        this.calculate();
-
         while (this.hasBlank()) {
             if (this.unsolvable()) {
                 this.toLastState();
@@ -174,6 +267,20 @@
         }
     };
 
+    Sudoku.prototype.fillManually = function () {
+        if (this.hasBlank()) {
+            if (this.unsolvable()) {
+                this.toLastState();
+            } else if (this.hasOne()) {
+                this.fillOnes();
+            } else {
+                this.fillMulti();
+            }
+        }
+
+        this.calculate();
+    };
+
     Sudoku.prototype.tryNext = function () {
         var dummy = this.currentState.target;
 
@@ -184,6 +291,8 @@
         }
 
         this.push();
+
+        console.log('try (', dummy.x, ',', dummy.y, ') avails[', index, '] =', dummy.avails[index]);
         this.fillOne(dummy.x, dummy.y, dummy.avails[index]);
     };
 
@@ -200,20 +309,23 @@
     };
 
     Sudoku.prototype.fillOnes = function () {
+        //console.log('ones exist.');
         _.each(this.ones(), function (item) {
             this.fillOne(item.x, item.y, item.avails[0]);
         }, this);
     };
 
     Sudoku.prototype.fillOne = function (x, y, value) {
+        console.log('fill (', x, ',' , y, ') =', value);
         this.currentState.sudoku[y][x] = value;
     };
 
     Sudoku.prototype.render = function () {
         var $table = $('<table class="table table-bordered"></table>');
-
-        _.each(this.currentState.sudoku, function (row) {
+        $table.append('<tr><th>-</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr>');
+        _.each(this.currentState.sudoku, function (row, i) {
             var $row = $('<tr></tr>');
+            $row.append('<th>' + i + '</th>');
             _.each(row, function (num) {
                 if (num === 0) {
                     num = ' ';
@@ -241,14 +353,26 @@
             [0, 0, 0, 0, 0, 0, 8, 0, 0]
         ];
 
-        var sudoku = new Sudoku(veryDifficult1);
+        var easy1 = [
+            [6, 9, 0, 0, 0, 5, 1, 0, 0],
+            [0, 0, 0, 0, 1, 3, 8, 0, 0],
+            [1, 0, 0, 0, 0, 2, 0, 0, 0],
+            [4, 7, 3, 0, 0, 0, 6, 5, 0],
+            [0, 0, 5, 0, 9, 0, 0, 7, 0],
+            [9, 6, 0, 0, 5, 0, 4, 0, 8],
+            [3, 0, 0, 2, 0, 8, 7, 0, 5],
+            [2, 0, 4, 0, 0, 6, 0, 8, 0],
+            [0, 0, 0, 0, 3, 0, 2, 0, 0]
+        ];
+
+        var sudoku = new Sudoku(easy1);
         sudoku.render();
 
         $('#calculate').on('click', function () {
-            sudoku = new Sudoku(veryDifficult1);
+            sudoku = new Sudoku(easy1);
             sudoku.render();
 
-            setTimeout(function() {
+            setTimeout(function () {
                 var start = new Date();
                 sudoku.fill();
                 console.log('spend:', (new Date() - start));
@@ -257,6 +381,10 @@
             }, 1000);
         });
 
+        $('#calculate-manually').on('click', function () {
+            sudoku.fillManually();
+            sudoku.render();
+        });
     });
 
 })(jQuery, _);
