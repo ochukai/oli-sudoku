@@ -51,7 +51,7 @@
         this.currentState = {};
         this.currentState.sudoku = deepCopy(this.origin);
 
-        this.calculate();
+        this.parse();
     };
 
     Sudoku.prototype.push = function () {
@@ -101,8 +101,8 @@
         return _.difference(this.nines, related);
     };
 
-    Sudoku.prototype.calculate = function () {
-        console.log('----------------------- begin calculate ---------------------------');
+    Sudoku.prototype.parse = function () {
+        //console.log('----------------------- begin parse ---------------------------');
 
         this.currentState.hasBlank = false;
         this.currentState.hasZeros = false;
@@ -110,14 +110,16 @@
         var dummy = [];
         var target = this.currentState.sudoku;
 
-        _.each(target, function (row, i) {
+        for (var i = 0; i < target.length; i++) {
+            var row = target[i];
             if (this.currentState.hasZeros) {
-                return false;  // break: return false;
+                break;
             }
 
-            _.each(row, function (num, j) {
+            for (var j = 0; j < row.length; j++) {
+                var num = row[j];
                 if (num !== 0) {
-                    return;
+                    continue;
                 }
 
                 this.currentState.hasBlank = true;
@@ -125,7 +127,7 @@
                 var avails = this.available(j, i);
                 if (avails.length === 0) {
                     this.currentState.hasZeros = true;
-                    return false; // break
+                    break;
                 }
 
                 dummy.push({
@@ -136,18 +138,18 @@
                     count: avails.length
                 });
 
-                console.log('(', j, ',', i, ')', avails);
-            }, this);
-        }, this);
+                //console.log('(', j, ',', i, ')', avails);
+            }
+        }
 
-        console.log('------------- after calculate before check ----', dummy.length, '----------------');
+        //console.log('------------- after parse before check ----', dummy.length, '----------------');
 
         this.currentState.avails = dummy;
         this.sort();
 
         if (!this.check()) {
             this.toLastState();
-            this.calculate();
+            this.parse();
         }
     };
 
@@ -263,7 +265,7 @@
                 this.fillMulti();
             }
 
-            this.calculate();
+            this.parse();
         }
     };
 
@@ -278,7 +280,7 @@
             }
         }
 
-        this.calculate();
+        this.parse();
     };
 
     Sudoku.prototype.tryNext = function () {
@@ -292,7 +294,7 @@
 
         this.push();
 
-        console.log('try (', dummy.x, ',', dummy.y, ') avails[', index, '] =', dummy.avails[index]);
+        //console.log('try (', dummy.x, ',', dummy.y, ') avails[', index, '] =', dummy.avails[index]);
         this.fillOne(dummy.x, dummy.y, dummy.avails[index]);
     };
 
@@ -316,7 +318,7 @@
     };
 
     Sudoku.prototype.fillOne = function (x, y, value) {
-        console.log('fill (', x, ',' , y, ') =', value);
+        //console.log('fill (', x, ',' , y, ') =', value);
         this.currentState.sudoku[y][x] = value;
     };
 
@@ -365,11 +367,23 @@
             [0, 0, 0, 0, 3, 0, 2, 0, 0]
         ];
 
-        var sudoku = new Sudoku(easy1);
+        var cusotm1 = [
+            [6, 0, 0, 0, 0, 5, 0, 0, 0],
+            [0, 0, 0, 0, 1, 3, 8, 0, 0],
+            [0, 0, 0, 0, 0, 2, 0, 0, 0],
+            [4, 0, 3, 0, 0, 0, 6, 5, 0],
+            [0, 0, 5, 0, 9, 0, 0, 7, 0],
+            [9, 6, 0, 0, 5, 0, 0, 0, 8],
+            [0, 0, 0, 0, 0, 8, 0, 0, 5],
+            [2, 0, 0, 0, 0, 6, 0, 8, 0],
+            [0, 0, 0, 0, 3, 0, 2, 0, 0]
+        ];
+
+        var sudoku = new Sudoku(veryDifficult1);
         sudoku.render();
 
         $('#calculate').on('click', function () {
-            sudoku = new Sudoku(easy1);
+            sudoku = new Sudoku(veryDifficult1);
             sudoku.render();
 
             setTimeout(function () {
