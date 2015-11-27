@@ -323,22 +323,36 @@
     };
 
     Sudoku.prototype.render = function () {
+        var self = this;
+
         var $table = $('<table class="table table-bordered"></table>');
         $table.append('<tr><th>-</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr>');
         _.each(this.currentState.sudoku, function (row, i) {
             var $row = $('<tr></tr>');
             $row.append('<th>' + i + '</th>');
-            _.each(row, function (num) {
+            _.each(row, function (num, j) {
+                var $td = $('<td></td>').data('x', j).data('y', i);
                 if (num === 0) {
                     num = ' ';
+                    $td.addClass('empty');
                 }
 
-                $row.append($('<td>' + num + '</td>'));
+                $row.append($td.text(num));
             });
             $table.append($row);
         });
 
         $('.sudoku-wrapper').empty().append($table);
+        $('.sudoku-wrapper').on('click', 'td.empty', function() {
+            var $this = $(this);
+            $this.parents('table').find('td').removeClass('active');
+            $this.addClass('active');
+
+            var x = $this.data('x');
+            var y = $this.data('y');
+            var avails = self.available(x, y);
+            console.log(x, y, avails);
+        });
     };
 
     $(function () {
@@ -382,23 +396,25 @@
         var sudoku = new Sudoku(veryDifficult1);
         sudoku.render();
 
-        $('#calculate').on('click', function () {
-            sudoku = new Sudoku(veryDifficult1);
-            sudoku.render();
+        //$('#calculate').on('click', function () {
+        //    sudoku = new Sudoku(veryDifficult1);
+        //    sudoku.render();
+        //
+        //    setTimeout(function () {
+        //        var start = new Date();
+        //        sudoku.fill();
+        //        console.log('spend:', (new Date() - start));
+        //
+        //        sudoku.render();
+        //    }, 1000);
+        //});
+        //
+        //$('#calculate-manually').on('click', function () {
+        //    sudoku.fillManually();
+        //    sudoku.render();
+        //});
 
-            setTimeout(function () {
-                var start = new Date();
-                sudoku.fill();
-                console.log('spend:', (new Date() - start));
 
-                sudoku.render();
-            }, 1000);
-        });
-
-        $('#calculate-manually').on('click', function () {
-            sudoku.fillManually();
-            sudoku.render();
-        });
     });
 
 })(jQuery, _);

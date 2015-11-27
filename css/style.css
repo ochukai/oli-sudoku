@@ -2,12 +2,49 @@
     width: 460px;
     /*min-width: 300px;*/
     /*max-width: 600px;*/
-    margin: 60px auto;
+    margin: 40px;
     font-size: 24px;
+}
+
+.sudoku-wrapper {
+    float: left;
+    display: inline-block;
+    margin: 10px;
 }
 
 .sudoku-wrapper td,
 .sudoku-wrapper th {
     vertical-align: middle;
     text-align: center;
+    transition: all 0.3s;
+}
+
+table.tips td,
+.sudoku-wrapper td.empty {
+    cursor: pointer;
+}
+
+table.tips td:hover,
+.sudoku-wrapper td.empty:hover {
+    background-color: #eee;
+}
+
+table.tips td:focus,
+table.tips td:active,
+.sudoku-wrapper td.empty.active,
+.sudoku-wrapper td.empty:active,
+.sudoku-wrapper td.empty:focus {
+    background-color: #ddd;
+}
+
+table.tips {
+    width: 100px;
+    float: left;
+    margin: 60px;
+}
+
+table.tips td {
+    vertical-align: middle;
+    text-align: center;
+    transition: all 0.3s;
 }
