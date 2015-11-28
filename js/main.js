@@ -39,17 +39,19 @@
         });
     }
 
+    // [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    var nines = _.range(1, 10);
+
     var Sudoku = function (soduku) {
-        // [1, 2, 3, 4, 5, 6, 7, 8, 9];
-        this.nines = _.range(1, 10);
 
         this.origin = soduku;
 
-        // a stack save every state.
-        this.snapshots = [];
-
         this.currentState = {};
         this.currentState.sudoku = deepCopy(this.origin);
+
+        // a stack save every state.
+        this.snapshots = [];
+        this.result = [];
 
         this.parse();
     };
@@ -98,7 +100,7 @@
             }
         }
 
-        return _.difference(this.nines, related);
+        return _.difference(nines, related);
     };
 
     Sudoku.prototype.parse = function () {
@@ -255,7 +257,7 @@
         this.tryNext();
     };
 
-    Sudoku.prototype.fill = function () {
+    Sudoku.prototype.autoFill = function () {
         while (this.hasBlank()) {
             if (this.unsolvable()) {
                 this.toLastState();
@@ -267,9 +269,12 @@
 
             this.parse();
         }
+
+        this.result = this.currentState.sudoku;
+        this.currentState = null;
     };
 
-    Sudoku.prototype.fillManually = function () {
+    Sudoku.prototype.autoFillOneStep = function () {
         if (this.hasBlank()) {
             if (this.unsolvable()) {
                 this.toLastState();
@@ -322,7 +327,23 @@
         this.currentState.sudoku[y][x] = value;
     };
 
-    Sudoku.prototype.render = function () {
+    Sudoku.prototype.isFinish = function () {
+        return !this.hasBlank();
+    };
+
+    Sudoku.prototype.current = function () {
+        return this.currentState.sudoku;
+    };
+
+    /**
+     * =====================================================
+     */
+
+    var SudokuPlayer = function() {
+
+    };
+
+    SudokuPlayer.prototype.render = function () {
         var self = this;
 
         var $table = $('<table class="table table-bordered"></table>');
@@ -343,6 +364,10 @@
         });
 
         $('.sudoku-wrapper').empty().append($table);
+    };
+
+    SudokuPlayer.prototype.initEvents = function () {
+
         $('.sudoku-wrapper').on('click', 'td.empty', function() {
             var $this = $(this);
             $this.parents('table').find('td').removeClass('active');
@@ -353,6 +378,8 @@
             var avails = self.available(x, y);
             console.log(x, y, avails);
         });
+
+
     };
 
     $(function () {
