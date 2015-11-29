@@ -2,19 +2,21 @@
     'use strict';
 
     /**
-     * A DLX node include six attr: up, down, left, right, col, row
+     * A DLX node include six attr:
+     *   - (up, down, left, right)
+     *   - (col, row)
      *
      * @constructor
      */
-    var Node = function (col, row, up, down, left, right) {
+    var Node = function (col, row) {
         // position
         this._col = _.isUndefined(col) ? -1 : col;
         this._row = _.isUndefined(row) ? -1 : row;
 
-        this._up = up;
-        this._down = down;
-        this._left = left;
-        this._right = right;
+        this._up    = null;
+        this._down  = null;
+        this._left  = null;
+        this._right = null;
     };
 
     Node.prototype.up = function (node) {
@@ -73,7 +75,7 @@
         // an [][cols]
         this.nodes = [];
 
-        this.head = null;
+        this.head = new Node(-1, -1);
         this.answer = [];
 
         /*
@@ -90,10 +92,10 @@
 
     /**
      * The columns represent the constraints of the puzzle. In Sudoku, we have 4:
-     *     * A position constraint: Only 1 number can occupy a cell
-     *     * A row constraint: Only 1 instance of a number can be in the row
-     *     * A column constraint: Only 1 instance of a number can be in a column
-     *     * A region constraint: Only 1 instance of a number can be in a region
+     *   - A position constraint: Only 1 number can occupy a cell
+     *   - A row constraint: Only 1 instance of a number can be in the row
+     *   - A column constraint: Only 1 instance of a number can be in a column
+     *   - A region constraint: Only 1 instance of a number can be in a region
      * Therefore there are SIZE^2 * 4 columns, where SIZE is the number of candidates/rows/cols.
      * In a 9 x 9, there are 324 columns.
      *
@@ -117,18 +119,17 @@
         }
 
         this.nodes.push(headers);
+        this.headTo(this.nodes[0][0])
     };
 
-    /**
-     * 0 0 1 0 1 1 0 -> 2,4,5
-     * 1 0 0 1 0 0 1 -> 0,3.6
-     * 0 1 1 0 0 1 0 -> 1,2,5
-     * 1 0 0 1 0 0 0 -> 0,3
-     * 0 1 0 0 0 0 1 -> 1,6
-     * 0 0 0 1 1 0 1 -> 3,4,6
-     *
-     * @param indexs
-     */
+    DancingLinkX.prototype.headTo = function(node) {
+        this.head.right(node);
+        this.head.left(node.left());
+
+        node.left().right(this.head);
+        node.left(this.head);
+    };
+
     DancingLinkX.prototype.addRow = function (indexs) {
         var len = this.nodes.length;
 
@@ -146,7 +147,7 @@
             var headerNode = this.nodes[0][curCol];
 
             var upIndex = this.lastIndex[curCol] || 0; // get the last index or 0 ( header );
-            var upNode = _.find(this.nodes[upIndex], function(item) {
+            var upNode = _.find(this.nodes[upIndex], function (item) {
                 return item.col() === curCol;
             });
 
@@ -164,30 +165,116 @@
         this.nodes.push(row);
     };
 
-    //DancingLinkX.prototype.dance = function () {});
+    DancingLinkX.prototype.dance = function () {
+        //console.log('current head point to:', this.head.right());
+        var headRightNode = this.head.right();
+        if (headRightNode === this.head) {
+            // success
+            return true;
+        }
 
-    DancingLinkX.prototype.remove = function () {
+        this.remove(headRightNode);
 
+        var downNode = headRightNode.down(),
+            rightNode,
+            leftNode;
+
+        while (downNode !== headRightNode) {
+            this.answer.push(downNode.row());
+
+            rightNode = downNode.right();
+            while (rightNode !== downNode) {
+                //console.log('________current remove:', rightNode);
+                this.remove(this.nodes[0][rightNode.col()]);
+                rightNode = rightNode.right();
+            }
+
+            if (this.dance()) {
+                return true;
+            }
+
+            this.answer.pop();
+
+            leftNode = downNode.left();
+            while (leftNode !== downNode) {
+                //console.log('________current restore:', leftNode);
+                this.restore(this.nodes[0][leftNode.col()]);
+                leftNode = leftNode.left();
+            }
+
+            downNode = downNode.down();
+        }
+
+        this.restore(headRightNode);
+        return false;
     };
 
-    DancingLinkX.prototype.resume = function () {
+    /**
+     * @param node on header
+     */
+    DancingLinkX.prototype.remove = function (node) {
+        //console.log('current remove:', node);
+        node.left().right(node.right());
+        node.right().left(node.left());
 
+        var downNode = node.down(),
+            rightNode;
+        while (downNode !== node) {
+            rightNode = downNode.right();
+            while (rightNode !== downNode) {
+                //console.log('____current remove:', rightNode);
+                rightNode.up().down(rightNode.down());
+                rightNode.down().up(rightNode.up());
+                rightNode = rightNode.right();
+            }
+
+            downNode = downNode.down();
+        }
     };
+
+    DancingLinkX.prototype.restore = function (node) {
+        //console.log('current restore:', node);
+        node.left().right(node);
+        node.right().left(node);
+
+        var upNode = node.up(),
+            rightNode;
+        while (upNode !== node) {
+            rightNode = upNode.right();
+            while (rightNode !== upNode) {
+                //console.log('____current restore:', rightNode);
+                rightNode.up().down(rightNode);
+                rightNode.down().up(rightNode);
+                rightNode = rightNode.right();
+            }
+
+            upNode = upNode.up();
+        }
+    };
+
+    //DancingLinkX.prototype.traverse = function () { };
+    //DancingLinkX.prototype.render = function () { };
 
     $(function () {
 
         var start = new Date();
-        var dlk = new DancingLinkX(7);
+
+        var dlk = window.dlk = new DancingLinkX(7);
         dlk.addRow([2, 4, 5]);
         dlk.addRow([0, 3, 6]);
         dlk.addRow([1, 2, 5]);
         dlk.addRow([0, 3]);
         dlk.addRow([1, 6]);
         dlk.addRow([3, 4, 6]);
+        console.log('add row cost:', (new Date() - start));
+        dlk.dance();
 
-        console.log('cost:', (new Date() - start));
-        console.log(dlk.nodes);
+        console.log('total cost:', (new Date() - start));
+        console.log(dlk.answer);
 
+        //2015-11-30 01:20:15.898 dancing-link-x.js:269 add row cost: 2
+        //2015-11-30 01:20:15.905 dancing-link-x.js:272 total cost: 9
+        //2015-11-30 01:20:15.906 dancing-link-x.js:273 [4, 5, 1]
     });
 
 })(jQuery, _);
