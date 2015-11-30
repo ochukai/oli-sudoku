@@ -259,18 +259,18 @@
 
         var start = new Date();
 
-        var dlk = window.dlk = new DancingLinkX(7);
-        dlk.addRow([2, 4, 5]);
-        dlk.addRow([0, 3, 6]);
-        dlk.addRow([1, 2, 5]);
-        dlk.addRow([0, 3]);
-        dlk.addRow([1, 6]);
-        dlk.addRow([3, 4, 6]);
+        var dlx = window.dlx = new DancingLinkX(7);
+        dlx.addRow([2, 4, 5]);
+        dlx.addRow([0, 3, 6]);
+        dlx.addRow([1, 2, 5]);
+        dlx.addRow([0, 3]);
+        dlx.addRow([1, 6]);
+        dlx.addRow([3, 4, 6]);
         console.log('add row cost:', (new Date() - start));
-        dlk.dance();
+        dlx.dance();
 
         console.log('total cost:', (new Date() - start));
-        console.log(dlk.answer);
+        console.log(dlx.answer);
 
         //2015-11-30 01:20:15.898 dancing-link-x.js:269 add row cost: 2
         //2015-11-30 01:20:15.905 dancing-link-x.js:272 total cost: 9
