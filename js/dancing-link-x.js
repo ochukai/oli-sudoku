@@ -12,9 +12,8 @@
         //factory(jQuery, _);
         factory();
     }
-}(function () {
+}(function ($, _) {
     'use strict';
-
     /**
      * A DLX node include six attr:
      *   - (up, down, left, right)
@@ -255,61 +254,10 @@
 
     /**
      * The columns represent the constraints of the puzzle. In Sudoku, we have 4:
-     *
      *   # A position constraint: Only 1 number can occupy a cell
-     *   ---- 0 - 80
-     *   ----              (x, y) -> a number
-     *   ---- index[0]  == (0, 0)
-     *   ---- ....
-     *   ---- index[15] == (1, 6)
-     *   ---- index[16] == (1, 7)
-     *   ---- ....
-     *   ---- index[80] == (8, 8)
-     *   ----
-     *   ---- x = Math.floor(index / 9), y = index % 9
-     *   ---- index = x * 9 + y
-     *
      *   # A row constraint: Only 1 instance of a number can be in the row
-     *   ---- 81 - 161
-     *   ----               y -> n       | y -> 0
-     *   ---- index[81]  == 0 -> 1       |      1
-     *   ---- index[82]  == 0 -> 2       |      2
-     *   ---- ....                       |      3
-     *   ---- index[93]  == 1 -> 4       |      4
-     *   ---- index[94]  == 1 -> 5       |      5
-     *   ---- ....                       |      6
-     *   ---- index[161] == 8 -> 9       |      7
-     *   ----                            |      8
-     *   ----
-     *   ---- y = Math.floor((index - 81) / 9), n = (index - 81) % 9 + 1
-     *   ---- index = y * 9 + (n - 1) + 81 = y * 9 + n + 80
-     *
      *   # A column constraint: Only 1 instance of a number can be in a column
-     *   ---- 162 - 242
-     *   ----               x -> n       | x -> 0 1 2 3 4 5 6 7 8
-     *   ---- index[162] == 0 -> 1
-     *   ---- ....
-     *   ---- index[173] == 1 -> 2
-     *   ---- index[174] == 1 -> 3
-     *   ---- ....
-     *   ---- index[242] == 8 -> 9
-     *   ----
-     *   ---- x = Math.floor((index - 162) / 9), n = (index - 162) % 9 + 1
-     *   ---- index = x * 9 + (n - 1) + 162 = x * 9 + n + 161
-     *
      *   # A region constraint: Only 1 instance of a number can be in a region
-     *   ---- 243 - 323
-     *   ----               b -> n       |  b -> 0 1 2
-     *   ---- index[243] == 0 -> 1       |    -> 3 4 5
-     *   ---- ....                       |    -> 6 7 8
-     *   ---- index[279] == 3 -> 4
-     *   ---- index[280] == 3 -> 5
-     *   ---- ....
-     *   ---- index[323] == 8 -> 9
-     *   ----
-     *   ---- b = Math.floor((index - 243) / 9), n = (index - 243) % 9 + 1
-     *   ---- index = b * 9 + (n - 1) + 243 = b * 9 + n + 242
-     *
      * Therefore there are SIZE^2 * 4 columns, where SIZE is the number of candidates/rows/cols.
      * In a 9 x 9, there are 324 columns.
      *
@@ -335,13 +283,22 @@
             [0, 0, 0, 0, 3, 0, 2, 0, 0]
         ];
 
-        for (var i = 0; i < sudo.length; i++) {
+        var i, j;
+        for (i = 0; i < sudo.length; i++) {
             var row = sudo[i];
-            for (var j = 0; j < row.length; j++) {
+            for (j = 0; j < row.length; j++) {
                 var n = row[j]; // number at this position.
                 if (n !== 0) {
                     this.add(j, i, n);
-                } else { // number at this position is 0.
+                }
+            }
+        }
+
+        for (i = 0; i < sudo.length; i++) {
+            row = sudo[i];
+            for (j = 0; j < row.length; j++) {
+                n = row[j]; // number at this position.
+                if (n === 0) {
                     for (var k = 1; k <= 9; k++) { // 1 - 9 are possible at this position.
                         this.add(j, i, k);
                     }
@@ -350,7 +307,7 @@
         }
     };
 
-    Sudoku.prototype.add = function(x, y, n) {
+    Sudoku.prototype.add = function (x, y, n) {
         this.dlxArr.push([
             this.toIndex(x, y),
             this.toColIndex(x, n),
@@ -359,13 +316,13 @@
         ]);
     };
 
-    Sudoku.prototype.addToDLX = function() {
-        _.each(this.dlxArr, function(items) {
+    Sudoku.prototype.addToDLX = function () {
+        _.each(this.dlxArr, function (items) {
             this.dlx.addRow(items);
         }, this);
     };
 
-    Sudoku.prototype.resolve = function() {
+    Sudoku.prototype.resolve = function () {
         this.dlx.dance();
     };
 
@@ -386,7 +343,7 @@
      * @param x
      * @param y
      */
-    Sudoku.prototype.toIndex = function(x, y) {
+    Sudoku.prototype.toIndex = function (x, y) {
         return x * 9 + y;
     };
 
@@ -409,7 +366,7 @@
      * @param y
      * @param n
      */
-    Sudoku.prototype.toRowIndex = function(y, n) {
+    Sudoku.prototype.toRowIndex = function (y, n) {
         return y * 9 + n + 80;
     };
 
@@ -430,7 +387,7 @@
      * @param x
      * @param n
      */
-    Sudoku.prototype.toColIndex = function(x, n) {
+    Sudoku.prototype.toColIndex = function (x, n) {
         return x * 9 + n + 161;
     };
 
@@ -452,11 +409,11 @@
      * @param y
      * @param n
      */
-    Sudoku.prototype.toBoxIndex = function(x, y, n) {
+    Sudoku.prototype.toBoxIndex = function (x, y, n) {
         return this.xyToBox(x, y) * 9 + n + 242
     };
 
-    Sudoku.prototype.xyToBox = function(x, y) {
+    Sudoku.prototype.xyToBox = function (x, y) {
         return Math.floor(y / 3) * 3 + Math.floor(x / 3);
     };
 
@@ -483,7 +440,7 @@
     sudoku.mapping();
     sudoku.addToDLX();
     console.log('mapping cost:', (new Date() - mappingStart));
-    //console.log(sudoku.dlxArr);
+    console.log(sudoku.dlxArr);
     //console.log(sudoku.dlx.nodes);
 
     var resolveStart = new Date();
@@ -500,6 +457,6 @@
     /* use chrome 46 */
     //2015-12-01 02:06:43.957 dancing-link-x.js:486 mapping cost: 20
     //2015-12-01 02:10:07.204 dancing-link-x.js:493 resolve cost: 203244 -> 203s -> 3min 23s
-    
+
     return Sudoku;
 }));
