@@ -4,16 +4,15 @@
         //define(['jquery', 'underscore'], factory);
     } else if (typeof exports === 'object') {
         // Node/CommonJS style for Browserify/Seajs
-        var $ = require('jquery');
-        var _ = require('underscore');
-        module.exports = factory($, _);
+        module.exports = factory(require('jquery'), require('underscore'));
     } else {
         // Browser globals
-        //factory(jQuery, _);
-        factory();
+        factory(jQuery, _);
+        //factory();
     }
 }(function ($, _) {
     'use strict';
+
     /**
      * A DLX node include six attr:
      *   - (up, down, left, right)
@@ -78,7 +77,7 @@
      */
 
     var DancingLinkX = function (cols, origin) {
-        this.cols = cols;
+        this.cols = cols; // total columns
         this.origin = origin;
 
         /*
@@ -87,24 +86,30 @@
 
         // an [][cols]
         this.nodes = [];
-
-        this.head = new Node(-1, -1);
         this.answer = [];
+        this.head = new Node(-1, -1);
 
         /*
-         * build helper
+         * ==================== build helper =====================
          */
 
         // length = cols,
-        // last index in this column
+        // last row index in this column
         this.lastIndex = [];
+
+        // node count in this column
+        this.countOfColumn = [];
 
         // init headers
         this.init();
     };
 
     DancingLinkX.prototype.init = function () {
-        // init header
+        this.initHeader();
+        this.addRows();
+    };
+
+    DancingLinkX.prototype.initHeader = function () {
         var headers = [];
         for (var i = 0; i < this.cols; i++) {
             headers.push(new Node(i, 0));
@@ -119,7 +124,85 @@
         }
 
         this.nodes.push(headers);
-        this.headTo(this.nodes[0][0])
+    };
+
+    DancingLinkX.prototype.addRows = function () {
+        // init column count set 0
+        for(var m = 0; m < this.cols; m++) {
+            this.countOfColumn[m] = 0;
+        }
+
+        _.each(this.origin, function (row) {
+            this.addRow(row);
+        }, this);
+    };
+
+    DancingLinkX.prototype.addRow = function (row) {
+        var len = this.nodes.length;
+
+        // init row and set (col, row)
+        var nodes = _.map(row, function (index) {
+            return new Node(index, len);
+        }, this);
+
+        // set "up, down, left, right"
+        _.each(nodes, function (node, i) {
+            var leftIndex = i === 0 ? (nodes.length - 1) : (i - 1);
+            var rightIndex = i === (nodes.length - 1) ? 0 : (i + 1);
+
+            var curCol = node.col();
+            var headerNode = this.nodes[0][curCol];
+
+            var upIndex = this.lastIndex[curCol] || 0; // get the last index or 0 ( header );
+            var upNode = (upIndex === 0)
+                       ? this.nodes[upIndex][curCol] // get header node directly.
+                       : _.find(this.nodes[upIndex], function (item) {
+                            return item.col() === curCol;
+                        });
+
+            node.right(nodes[rightIndex])
+                .left(nodes[leftIndex])
+                .up(upNode) // decide by lastIndex[curCol]
+                .down(headerNode); // point to "header(row = 0)" by default
+
+            upNode.down(node);
+            headerNode.up(node);
+
+            this.lastIndex[curCol] = len; // update the index of node in this column
+            this.countOfColumn[curCol]++;
+        }, this);
+
+        this.nodes.push(nodes);
+    };
+
+    DancingLinkX.prototype.getIndexOfLeastCountColumn = function () {
+        var index;
+        var minCount;
+        var curCount;
+
+        for (var i = 0; i < this.countOfColumn.length; i++) {
+            curCount = this.countOfColumn[i];
+            if (curCount === 0) {
+                continue;
+            }
+
+            if (!minCount) {
+                minCount = curCount;
+                index = i;
+                continue;
+            }
+
+            if (curCount < minCount) {
+                minCount = curCount;
+                index = i;
+            }
+        }
+
+        return index;
+    };
+
+    DancingLinkX.prototype.headToIndex = function (index) {
+        this.headTo(this.nodes[0][index]);
     };
 
     DancingLinkX.prototype.headTo = function (node) {
@@ -130,41 +213,6 @@
         node.left(this.head);
     };
 
-    DancingLinkX.prototype.addRow = function (indexs) {
-        var len = this.nodes.length;
-
-        // init row and set (col, row)
-        var row = _.map(indexs, function (index) {
-            return new Node(index, len);
-        }, this);
-
-        // set "up, down, left, right"
-        _.each(row, function (node, i) {
-            var leftIndex = i === 0 ? (row.length - 1) : (i - 1);
-            var rightIndex = i === (row.length - 1) ? 0 : (i + 1);
-
-            var curCol = node.col();
-            var headerNode = this.nodes[0][curCol];
-
-            var upIndex = this.lastIndex[curCol] || 0; // get the last index or 0 ( header );
-            var upNode = _.find(this.nodes[upIndex], function (item) {
-                return item.col() === curCol;
-            });
-
-            node.right(row[rightIndex])
-                .left(row[leftIndex])
-                .up(upNode) // decide by lastIndex[curCol]
-                .down(headerNode); // point to "header(row = 0)" by default
-
-            upNode.down(node);
-            headerNode.up(node);
-
-            this.lastIndex[curCol] = len; // update the index of node in this column
-        }, this);
-
-        this.nodes.push(row);
-    };
-
     DancingLinkX.prototype.dance = function () {
         //console.log('current head point to:', this.head.right());
         var headRightNode = this.head.right();
@@ -173,12 +221,19 @@
             return true;
         }
 
+        // head to the least column
+        var index = this.getIndexOfLeastCountColumn();
+        console.log('current least column:', index);
+        if (index === -1) {
+            return false;
+        }
+
+        this.headToIndex(index);
+
+        headRightNode = this.head.right();
         this.remove(headRightNode);
 
-        var downNode = headRightNode.down(),
-            rightNode,
-            leftNode;
-
+        var downNode = headRightNode.down(), rightNode, leftNode;
         while (downNode !== headRightNode) {
             this.answer.push(downNode.row());
 
@@ -226,6 +281,8 @@
                 rightNode.up().down(rightNode.down());
                 rightNode.down().up(rightNode.up());
                 rightNode = rightNode.right();
+
+                this.countOfColumn[node.col()]--;
             }
 
             downNode = downNode.down();
@@ -246,10 +303,56 @@
                 rightNode.up().down(rightNode);
                 rightNode.down().up(rightNode);
                 rightNode = rightNode.right();
+
+                this.countOfColumn[node.col()]++;
             }
 
             upNode = upNode.up();
         }
+    };
+
+    DancingLinkX.prototype.render = function () {
+        var $table = $('<table class="table table-bordered"></table>');
+
+        var headers = _.range(this.cols);
+        var $header = $('<tr></tr>');
+        _.each(headers, function(item) {
+            $header.append($('<th>' + item + '</th>'));
+        });
+        $table.append($header);
+
+        _.each(this.origin, function (row) {
+            var $row = $('<tr></tr>');
+            var i;
+            var lastIndex = 0;
+
+            // add 0
+            if (row[0] !== 0) {
+                $row.append($('<td> </td>'));
+            }
+
+            _.each(row, function(index) {
+                if (index !== 0) {
+                    for (i = lastIndex + 1; i < index; i++) {
+                        $row.append($('<td> </td>'));
+                    }
+                }
+
+                $row.append($('<td> 1 </td>'));
+                lastIndex = index;
+            }, this);
+
+            var lastIndex = _.last(row);
+            if (lastIndex !== this.cols - 1) {
+                for (i = lastIndex + 1; i < this.cols; i++) {
+                    $row.append($('<td> </td>'));
+                }
+            }
+
+            $table.append($row);
+        }, this);
+
+        $('#dlk').empty().append($table);
     };
 
     /**
@@ -265,27 +368,80 @@
      * Therefore, there are SIZE^3 rows.
      * In a 9 x 9, this would be 729 rows.
      */
-    var Sudoku = function () {
-        this.dlx = new DancingLinkX(324); // 81 * 4
+    var Sudoku = function (sudoku) {
+        this.origin = sudoku;
+
         this.dlxArr = [];
+        this.mapping();
+
+        this.dlx = new DancingLinkX(324, this.dlxArr); // 81 * 4
+    };
+
+    /**
+     * 0,1,2 -> [0, 2]
+     * 3,4,5 -> [3, 5]
+     * 6,7,8 -> [6, 8]
+     *
+     * @param n
+     * @returns {*[start, end]}
+     */
+    function range(n) {
+        var end = Math.ceil((n + 1) / 3) * 3;
+        return [end - 3, end - 1];
+    }
+
+    // [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    var nines = _.range(1, 10);
+
+    /**
+     * get available numbers in the (row, col)
+     *
+     * @param x 0-8 index of col
+     * @param y 0-8 index of row
+     */
+    Sudoku.prototype.available = function (x, y) {
+        var target = this.origin;
+
+        // get row
+        var related = _.clone(target[y]);
+
+        // get col
+        _.each(target, function (row) {
+            related.push(row[x]);
+        });
+
+        // get square
+        var rangeX = range(x);
+        var rangeY = range(y);
+        for (var i = rangeY[0]; i <= rangeY[1]; i++) {
+            for (var j = rangeX[0]; j <= rangeX[1]; j++) {
+                related.push(target[i][j]);
+            }
+        }
+
+        return _.difference(nines, related);
     };
 
     Sudoku.prototype.mapping = function () {
-        var sudo = [
-            [6, 9, 0, 0, 0, 5, 1, 0, 0],
-            [0, 0, 0, 0, 1, 3, 8, 0, 0],
-            [1, 0, 0, 0, 0, 2, 0, 0, 0],
-            [4, 7, 3, 0, 0, 0, 6, 5, 0],
-            [0, 0, 5, 0, 9, 0, 0, 7, 0],
-            [9, 6, 0, 0, 5, 0, 4, 0, 8],
-            [3, 0, 0, 2, 0, 8, 7, 0, 5],
-            [2, 0, 4, 0, 0, 6, 0, 8, 0],
-            [0, 0, 0, 0, 3, 0, 2, 0, 0]
-        ];
+        var i, j, len = this.origin.length;
 
-        var i, j;
-        for (i = 0; i < sudo.length; i++) {
-            var row = sudo[i];
+        for (i = 0; i < len; i++) {
+            var row = this.origin[i];
+            for (j = 0; j < row.length; j++) {
+                var n = row[j]; // number at this position.
+                if (n === 0) {
+                    var avails = this.available(j, i); // calculate available number at this position
+                    //console.log('(', j, ',', i, ')', avails);
+
+                    if (avails.length === 1) {
+                        this.origin[i][j] = avails[0];
+                    }
+                }
+            }
+        }
+
+        for (i = 0; i < len; i++) {
+            var row = this.origin[i];
             for (j = 0; j < row.length; j++) {
                 var n = row[j]; // number at this position.
                 if (n !== 0) {
@@ -294,32 +450,30 @@
             }
         }
 
-        for (i = 0; i < sudo.length; i++) {
-            row = sudo[i];
+        for (i = 0; i < len; i++) {
+            var row = this.origin[i];
             for (j = 0; j < row.length; j++) {
-                n = row[j]; // number at this position.
+                var n = row[j]; // number at this position.
                 if (n === 0) {
-                    for (var k = 1; k <= 9; k++) { // 1 - 9 are possible at this position.
+                    var avails = this.available(j, i); // calculate available number at this position
+                    //console.log('(', j, ',', i, ')', avails);
+
+                    _.each(avails, function (k) {
                         this.add(j, i, k);
-                    }
+                    }, this);
                 }
             }
         }
     };
 
     Sudoku.prototype.add = function (x, y, n) {
+        //console.log('add (', x, ',', y, ')', n);
         this.dlxArr.push([
             this.toIndex(x, y),
-            this.toColIndex(x, n),
             this.toRowIndex(y, n),
+            this.toColIndex(x, n),
             this.toBoxIndex(x, y, n)
         ]);
-    };
-
-    Sudoku.prototype.addToDLX = function () {
-        _.each(this.dlxArr, function (items) {
-            this.dlx.addRow(items);
-        }, this);
     };
 
     Sudoku.prototype.resolve = function () {
@@ -417,37 +571,76 @@
         return Math.floor(y / 3) * 3 + Math.floor(x / 3);
     };
 
-    //var start = new Date();
+    var sudo = [
+        [6, 9, 0, 0, 0, 5, 1, 0, 0],
+        [0, 0, 0, 0, 1, 3, 8, 0, 0],
+        [1, 0, 0, 0, 0, 2, 0, 0, 0],
+        [4, 7, 3, 0, 0, 0, 6, 5, 0],
+        [0, 0, 5, 0, 9, 0, 0, 7, 0],
+        [9, 6, 0, 0, 5, 0, 4, 0, 8],
+        [3, 0, 0, 2, 0, 8, 7, 0, 5],
+        [2, 0, 4, 0, 0, 6, 0, 8, 0],
+        [0, 0, 0, 0, 3, 0, 2, 0, 0]
+    ];
+
+    var cusotm1 = [
+        [6, 0, 0, 0, 0, 5, 0, 0, 0],
+        [0, 0, 0, 0, 1, 3, 8, 0, 0],
+        [0, 0, 0, 0, 0, 2, 0, 0, 0],
+        [4, 0, 3, 0, 0, 0, 6, 5, 0],
+        [0, 0, 5, 0, 9, 0, 0, 7, 0],
+        [9, 6, 0, 0, 5, 0, 0, 0, 8],
+        [0, 0, 0, 0, 0, 8, 0, 0, 5],
+        [2, 0, 0, 0, 0, 6, 0, 8, 0],
+        [0, 0, 0, 0, 3, 0, 2, 0, 0]
+    ];
+
+    var veryDifficult1 = [
+        [0, 0, 9, 0, 0, 0, 0, 0, 0],
+        [6, 0, 0, 0, 4, 0, 0, 3, 0],
+        [0, 0, 7, 6, 0, 0, 0, 2, 0],
+        [3, 0, 0, 0, 0, 2, 1, 0, 0],
+        [0, 0, 5, 9, 0, 0, 7, 0, 0],
+        [0, 0, 8, 0, 0, 0, 0, 0, 5],
+        [0, 1, 0, 0, 0, 4, 9, 0, 0],
+        [0, 9, 0, 0, 7, 0, 0, 0, 6],
+        [0, 0, 0, 0, 0, 0, 8, 0, 0]
+    ];
+
+    var third = [
+        [8, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 3, 6, 0, 0, 0, 0, 0],
+        [0, 7, 0, 0, 9, 0, 2, 0, 0],
+        [0, 5, 0, 0, 0, 7, 0, 0, 0],
+        [0, 0, 0, 0, 4, 5, 7, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 3, 0],
+        [0, 0, 1, 0, 0, 0, 0, 6, 8],
+        [0, 0, 8, 5, 0, 0, 0, 1, 0],
+        [0, 9, 0, 0, 0, 0, 4, 0, 0]
+    ];
+
+    //var test = [
+    //    [2, 4, 5],
+    //    [0, 3, 6],
+    //    [1, 2, 5],
+    //    [0, 3],
+    //    [1, 6],
+    //    [3, 4, 6]
+    //];
     //
-    //var dlx = window.dlx = new DancingLinkX(7);
-    //dlx.addRow([2, 4, 5]);
-    //dlx.addRow([0, 3, 6]);
-    //dlx.addRow([1, 2, 5]);
-    //dlx.addRow([0, 3]);
-    //dlx.addRow([1, 6]);
-    //dlx.addRow([3, 4, 6]);
-    //console.log('add row cost:', (new Date() - start));
-    //dlx.dance();
-    //console.log('total cost:', (new Date() - start));
-    //console.log(dlx.answer);
-    //
-    //2015-11-30 01:20:15.898 dancing-link-x.js:269 add row cost: 2
-    //2015-11-30 01:20:15.905 dancing-link-x.js:272 total cost: 9
-    //2015-11-30 01:20:15.906 dancing-link-x.js:273 [4, 5, 1]
+    //var dlx = window.dlx = new DancingLinkX(7, test);
+    //dlx.render();
 
-    var mappingStart = new Date();
-    var sudoku = new Sudoku();
-    sudoku.mapping();
-    sudoku.addToDLX();
-    console.log('mapping cost:', (new Date() - mappingStart));
-    console.log(sudoku.dlxArr);
-    //console.log(sudoku.dlx.nodes);
+    //// var start = new Date();
+    //var sudoku = new Sudoku(third);
+    //sudoku.dlx.render();
 
-    var resolveStart = new Date();
-    sudoku.resolve();
-    console.log('resolve cost:', (new Date() - resolveStart));
+    //console.log('mapping cost:', (new Date() - start));
+    //sudoku.resolve();
+    //console.log('resolve cost:', (new Date() - start));
 
-    console.log(sudoku.dlx.answer.length);
+    //console.log('dlx array length:', sudoku.dlxArr.length);
+    //console.log('result length:', sudoku.dlx.answer.length);
 
     /* use node */
     //$ node js/dancing-link-x.js
