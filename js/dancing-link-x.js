@@ -175,30 +175,22 @@
         this.nodes.push(nodes);
     };
 
-    DancingLinkX.prototype.getIndexOfLeastCountColumn = function () {
-        var index;
-        var minCount;
-        var curCount;
-
-        for (var i = 0; i < this.countOfColumn.length; i++) {
-            curCount = this.countOfColumn[i];
-            if (curCount === 0) {
-                continue;
-            }
-
-            if (!minCount) {
-                minCount = curCount;
-                index = i;
-                continue;
-            }
-
-            if (curCount < minCount) {
-                minCount = curCount;
-                index = i;
-            }
+    DancingLinkX.prototype.getHeadeNodeOfLeastCountColumn = function () {
+        if (!this.head.right()) {
+            this.headToIndex(0);
         }
 
-        return index;
+        var dummy = this.head.right();
+        var min = dummy;
+        while (dummy !== this.head) {
+            if (this.countOfColumn[dummy.col()] < this.countOfColumn[min.col()]) {
+                min = dummy
+            }
+
+            dummy = dummy.right();
+        }
+
+        return min;
     };
 
     DancingLinkX.prototype.headToIndex = function (index) {
@@ -206,31 +198,36 @@
     };
 
     DancingLinkX.prototype.headTo = function (node) {
-        this.head.right(node);
-        this.head.left(node.left());
+        if (this.head.right()) {
+            this.head.right().left(this.head.left());
+        }
 
+        if(this.head.left()){
+            this.head.left().right(this.head.right());
+        }
+
+        this.head.right(node);
         node.left().right(this.head);
+
+        this.head.left(node.left());
         node.left(this.head);
     };
 
     DancingLinkX.prototype.dance = function () {
-        //console.log('current head point to:', this.head.right());
         var headRightNode = this.head.right();
+        // console.log('---- current head right node:', headRightNode);
         if (headRightNode === this.head) {
             // success
             return true;
         }
 
         // head to the least column
-        var index = this.getIndexOfLeastCountColumn();
-        console.log('current least column:', index);
-        if (index === -1) {
+        headRightNode = this.getHeadeNodeOfLeastCountColumn();
+        // console.log('current least column:', headRightNode);
+        if (this.countOfColumn[headRightNode.col()] < 1) {
             return false;
         }
 
-        this.headToIndex(index);
-
-        headRightNode = this.head.right();
         this.remove(headRightNode);
 
         var downNode = headRightNode.down(), rightNode, leftNode;
@@ -239,7 +236,6 @@
 
             rightNode = downNode.right();
             while (rightNode !== downNode) {
-                //console.log('________current remove:', rightNode);
                 this.remove(this.nodes[0][rightNode.col()]);
                 rightNode = rightNode.right();
             }
@@ -252,7 +248,6 @@
 
             leftNode = downNode.left();
             while (leftNode !== downNode) {
-                //console.log('________current restore:', leftNode);
                 this.restore(this.nodes[0][leftNode.col()]);
                 leftNode = leftNode.left();
             }
@@ -268,7 +263,7 @@
      * @param node on header
      */
     DancingLinkX.prototype.remove = function (node) {
-        //console.log('current remove:', node);
+        // console.log('current header node:', node);
         node.left().right(node.right());
         node.right().left(node.left());
 
@@ -277,12 +272,17 @@
         while (downNode !== node) {
             rightNode = downNode.right();
             while (rightNode !== downNode) {
-                //console.log('____current remove:', rightNode);
+                // console.log('current remove:', rightNode);
+
                 rightNode.up().down(rightNode.down());
                 rightNode.down().up(rightNode.up());
-                rightNode = rightNode.right();
 
-                this.countOfColumn[node.col()]--;
+                var col = rightNode.col();
+                var oldCount = this.countOfColumn[col];
+                this.countOfColumn[col] = oldCount - 1;
+                // console.log(col, 'col\'s old count is', oldCount);
+
+                rightNode = rightNode.right();
             }
 
             downNode = downNode.down();
@@ -290,7 +290,7 @@
     };
 
     DancingLinkX.prototype.restore = function (node) {
-        //console.log('current restore:', node);
+        // console.log('current header node:', node);
         node.left().right(node);
         node.right().left(node);
 
@@ -299,12 +299,17 @@
         while (upNode !== node) {
             rightNode = upNode.right();
             while (rightNode !== upNode) {
-                //console.log('____current restore:', rightNode);
+                // console.log('current restore:', rightNode);
+
                 rightNode.up().down(rightNode);
                 rightNode.down().up(rightNode);
-                rightNode = rightNode.right();
 
-                this.countOfColumn[node.col()]++;
+                var col = rightNode.col();
+                var oldCount = this.countOfColumn[col];
+                this.countOfColumn[col] = oldCount + 1;
+                // console.log(col, 'col\'s old count is', oldCount);
+
+                rightNode = rightNode.right();
             }
 
             upNode = upNode.up();
@@ -323,8 +328,8 @@
 
         _.each(this.origin, function (row) {
             var $row = $('<tr></tr>');
-            var i;
             var lastIndex = 0;
+            var i;
 
             // add 0
             if (row[0] !== 0) {
@@ -431,7 +436,7 @@
                 var n = row[j]; // number at this position.
                 if (n === 0) {
                     var avails = this.available(j, i); // calculate available number at this position
-                    //console.log('(', j, ',', i, ')', avails);
+                    // console.log('(', j, ',', i, ')', avails);
 
                     if (avails.length === 1) {
                         this.origin[i][j] = avails[0];
@@ -612,35 +617,33 @@
         [0, 0, 3, 6, 0, 0, 0, 0, 0],
         [0, 7, 0, 0, 9, 0, 2, 0, 0],
         [0, 5, 0, 0, 0, 7, 0, 0, 0],
-        [0, 0, 0, 0, 4, 5, 7, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 3, 0],
+        [0, 0, 0, 0, 4, 0, 7, 0, 0],
+        [0, 0, 0, 1, 0, 5, 0, 3, 0],
         [0, 0, 1, 0, 0, 0, 0, 6, 8],
         [0, 0, 8, 5, 0, 0, 0, 1, 0],
         [0, 9, 0, 0, 0, 0, 4, 0, 0]
     ];
 
-    //var test = [
-    //    [2, 4, 5],
-    //    [0, 3, 6],
-    //    [1, 2, 5],
-    //    [0, 3],
-    //    [1, 6],
-    //    [3, 4, 6]
-    //];
+    var test = [
+        [2, 4, 5],
+        [0, 3, 6],
+        [1, 2, 5],
+        [0, 3],
+        [1, 6],
+        [3, 4, 6]
+    ];
     //
     //var dlx = window.dlx = new DancingLinkX(7, test);
     //dlx.render();
+    //dlx.dance();
+    //console.log(dlx.answer);
 
-    //// var start = new Date();
-    //var sudoku = new Sudoku(third);
-    //sudoku.dlx.render();
-
-    //console.log('mapping cost:', (new Date() - start));
-    //sudoku.resolve();
-    //console.log('resolve cost:', (new Date() - start));
-
-    //console.log('dlx array length:', sudoku.dlxArr.length);
-    //console.log('result length:', sudoku.dlx.answer.length);
+    var start = new Date();
+    var sudoku = new Sudoku(third);
+    // sudoku.dlx.render();
+    sudoku.resolve();
+    console.log('resolve cost:', (new Date() - start));
+    console.log('result length:', sudoku.dlx.answer.length);
 
     /* use node */
     //$ node js/dancing-link-x.js
