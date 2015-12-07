@@ -1,0 +1,26 @@
+{
+  "name": "oli-sudoku",
+  "version": "1.0.0",
+  "description": "sudoku, a number game in which you fill a square of 81 smaller squares with the numbers 1 to 9 so that each row, column, and square of 9 squares contains each number only once",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ochukai/oli-sudoku.git"
+  },
+  "keywords": [
+    "Sudoku"
+  ],
+  "author": "ochukai",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ochukai/oli-sudoku/issues"
+  },
+  "homepage": "https://github.com/ochukai/oli-sudoku#readme",
+  "dependencies": {
+    "jquery": "^2.1.4",
+    "underscore": "^1.8.3"
+  }
+}
