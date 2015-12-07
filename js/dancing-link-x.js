@@ -175,7 +175,7 @@
         this.nodes.push(nodes);
     };
 
-    DancingLinkX.prototype.getHeadeNodeOfLeastCountColumn = function () {
+    DancingLinkX.prototype.getHeaderNodeOfLeastCountColumn = function () {
         if (!this.head.right()) {
             this.headToIndex(0);
         }
@@ -222,7 +222,7 @@
         }
 
         // head to the least column
-        headRightNode = this.getHeadeNodeOfLeastCountColumn();
+        headRightNode = this.getHeaderNodeOfLeastCountColumn();
         // console.log('current least column:', headRightNode);
         if (this.countOfColumn[headRightNode.col()] < 1) {
             return false;
@@ -357,7 +357,7 @@
             $table.append($row);
         }, this);
 
-        $('#dlk').empty().append($table);
+        //$('#dlk').empty().append($table);
     };
 
     /**
@@ -475,8 +475,7 @@
         //console.log('add (', x, ',', y, ')', n);
         this.dlxArr.push([
             this.toIndex(x, y),
-            this.toRowIndex(y, n),
-            this.toColIndex(x, n),
+            this.toRowIndex(y, n), this.toColIndex(x, n),
             this.toBoxIndex(x, y, n)
         ]);
     };
@@ -576,6 +575,54 @@
         return Math.floor(y / 3) * 3 + Math.floor(x / 3);
     };
 
+    Sudoku.prototype.parse = function() {
+        this.answer = [];
+        for (var i = 0; i < 9;i++) {
+            this.answer[i] = [];
+        }
+
+        _.each(this.dlx.answer, function(index) {
+            var row = this.dlxArr[index - 1];
+            var a = row[0],
+                b = row[1],
+                c = row[2],
+                x,
+                y,
+                n;
+
+            /**
+             * 9x + y       = a
+             * 9y + n + 80  = b
+             * 9x + n + 160 = c
+             */
+            x = (9 * a - b + c - 81) / 90;
+            y = a - 9 * x;
+            n = b - 80 - 9 * y;
+
+            this.answer[y][x] = n;
+            //console.log('x:', x, ',y:', y, ',n:', n);
+        }, this);
+    };
+
+    Sudoku.prototype.render = function () {
+        var $table = $('<table class="table table-bordered"></table>');
+        $table.append('<tr><th>-</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr>');
+        _.each(this.answer || this.origin, function (row, i) {
+            var $row = $('<tr></tr>');
+            $row.append('<th>' + i + '</th>');
+            _.each(row, function (num) {
+                if (num === 0) {
+                    num = ' ';
+                }
+
+                $row.append($('<td>' + num + '</td>'));
+            });
+            $table.append($row);
+        });
+
+        $('.sudoku-wrapper').empty().append($table);
+    };
+
     var sudo = [
         [6, 9, 0, 0, 0, 5, 1, 0, 0],
         [0, 0, 0, 0, 1, 3, 8, 0, 0],
@@ -617,42 +664,41 @@
         [0, 0, 3, 6, 0, 0, 0, 0, 0],
         [0, 7, 0, 0, 9, 0, 2, 0, 0],
         [0, 5, 0, 0, 0, 7, 0, 0, 0],
-        [0, 0, 0, 0, 4, 0, 7, 0, 0],
-        [0, 0, 0, 1, 0, 5, 0, 3, 0],
+        [0, 0, 0, 0, 4, 5, 7, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 3, 0],
         [0, 0, 1, 0, 0, 0, 0, 6, 8],
         [0, 0, 8, 5, 0, 0, 0, 1, 0],
         [0, 9, 0, 0, 0, 0, 4, 0, 0]
     ];
 
-    var test = [
-        [2, 4, 5],
-        [0, 3, 6],
-        [1, 2, 5],
-        [0, 3],
-        [1, 6],
-        [3, 4, 6]
-    ];
+    //var test = [
+    //    [2, 4, 5],
+    //    [0, 3, 6],
+    //    [1, 2, 5],
+    //    [0, 3],
+    //    [1, 6],
+    //    [3, 4, 6]
+    //];
     //
     //var dlx = window.dlx = new DancingLinkX(7, test);
     //dlx.render();
     //dlx.dance();
     //console.log(dlx.answer);
 
-    var start = new Date();
-    var sudoku = new Sudoku(third);
-    // sudoku.dlx.render();
-    sudoku.resolve();
-    console.log('resolve cost:', (new Date() - start));
-    console.log('result length:', sudoku.dlx.answer.length);
+    $(function() {
 
-    /* use node */
-    //$ node js/dancing-link-x.js
-    //mapping cost: 64
-    //resolve cost: 146223 -> 146s -> 2min 26s
+        var sudoku = new Sudoku(third);
+        sudoku.render();
 
-    /* use chrome 46 */
-    //2015-12-01 02:06:43.957 dancing-link-x.js:486 mapping cost: 20
-    //2015-12-01 02:10:07.204 dancing-link-x.js:493 resolve cost: 203244 -> 203s -> 3min 23s
+        $('#calculate').on('click', function () {
+            var start = new Date();
+            sudoku.resolve();
+            console.log('resolve cost:', (new Date() - start));
+            sudoku.parse();
+            sudoku.render();
+        });
+
+    });
 
     return Sudoku;
 }));
