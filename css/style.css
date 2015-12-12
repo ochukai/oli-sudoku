@@ -1,6 +1,5 @@
 .sudoku-wrapper {
     width: 500px;
-    /*min-width: 300px;*/
     /*max-width: 600px;*/
     margin: 40px;
     font-size: 24px;
@@ -12,13 +11,45 @@
     margin: 10px;
 }
 
-.sudoku-wrapper td,
-.sudoku-wrapper th {
-    vertical-align: middle;
+/*
+.sudoku-wrapper td {
+    transition: all 0.2s;
     text-align: center;
-    transition: all 0.3s;
+    margin: 1px;
+    display: inline-block;
+    float: left;
+    height: 50px;
+    width: 50px;
+    color: #666;
+    border: 1px solid pink;
+}
+*/
+
+.sudoku-wrapper td {
+    transition: all 0.2s;
+    text-align: center;
+    margin: 1px;
+    color: #666;
 }
 
+.sudoku-wrapper td.original {
+    font-weight: 600;
+    color: #3E4651;
+}
+
+.sudoku-wrapper td.highlight {
+    background-color: #fafafa;
+}
+
+.sudoku-wrapper td.active-related {
+    background-color: #edecf0;
+}
+
+/*
+    ========================================================
+        tips
+    ========================================================
+*/
 table.tips td,
 .sudoku-wrapper td.empty {
     cursor: pointer;
@@ -29,11 +60,8 @@ table.tips td:hover,
     background-color: #eee;
 }
 
-table.tips td:focus,
 table.tips td:active,
-.sudoku-wrapper td.empty.active,
-.sudoku-wrapper td.empty:active,
-.sudoku-wrapper td.empty:focus {
+.sudoku-wrapper td.empty.active {
     background-color: #ddd;
 }
 
