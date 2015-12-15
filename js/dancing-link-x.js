@@ -357,7 +357,7 @@
             $table.append($row);
         }, this);
 
-        //$('#dlk').empty().append($table);
+        $('#dlk').empty().append($table);
     };
 
     /**
@@ -689,6 +689,8 @@
 
         var sudoku = new Sudoku(third);
         sudoku.render();
+
+        sudoku.dlx.render();
 
         $('#calculate').on('click', function () {
             var start = new Date();

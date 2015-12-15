@@ -1,78 +1,98 @@
-.sudoku-wrapper {
-    width: 500px;
+
+body {
+    background-color: #ff8041;
+}
+
+.wrapper {
+    width: 509px;
     /*max-width: 600px;*/
-    margin: 40px;
+    margin: 40px auto;
     font-size: 24px;
 }
 
-.sudoku-wrapper {
-    float: left;
-    display: inline-block;
-    margin: 10px;
+.table > thead > tr > th,
+.table > tbody > tr > th,
+.table > tfoot > tr > th,
+.table > thead > tr > td,
+.table > tbody > tr > td,
+.table > tfoot > tr > td {
+    vertical-align: middle;
+    text-align: center;
+    border-top: none;
+    transition: all 0.3s;
+}
+
+.wrapper .table > tbody > tr > td {
+    border-left: 1px solid pink;
+    border-top: 1px solid pink;
+}
+
+.wrapper .table > tbody > tr > td:first-child {
+    border-left: none;
+}
+
+.wrapper .table > tbody > tr:first-child > td {
+    border-top: none;
+}
+
+.br {
+    border-right: 4px solid pink;
+}
+
+.bb {
+    border-bottom: 4px solid pink;
 }
 
 /*
-.sudoku-wrapper td {
-    transition: all 0.2s;
-    text-align: center;
-    margin: 1px;
-    display: inline-block;
-    float: left;
-    height: 50px;
-    width: 50px;
-    color: #666;
-    border: 1px solid pink;
-}
+    ------------------end border----------------------------------
 */
 
-.sudoku-wrapper td {
-    transition: all 0.2s;
-    text-align: center;
-    margin: 1px;
-    color: #666;
+.sudoku-wrapper,
+.tips-wrapper {
+    box-shadow: 1px 1px 4px #000;
+}
+
+.sudoku-wrapper {
+    background-color: #30281d;
+    color: #ead4a3;
+}
+
+.tips-wrapper {
+    background-color: #36373b;
+    color: #fff;
+}
+
+.sudoku-wrapper td.empty,
+.tips-wrapper td {
+    cursor: pointer;
 }
 
 .sudoku-wrapper td.original {
     font-weight: 600;
-    color: #3E4651;
+    color: #fff;
+    font-size: 30px;
+}
+
+.tips-wrapper td {
+    cursor: pointer;
+    font-size: 30px;
 }
 
 .sudoku-wrapper td.highlight {
-    background-color: #fafafa;
+    background-color: #36373b;
 }
 
-.sudoku-wrapper td.active-related {
-    background-color: #edecf0;
+/* rewrite style from bs */
+.sudoku-wrapper .table > tbody > tr > td.active {
+    background-color: #221713;
 }
 
-/*
-    ========================================================
-        tips
-    ========================================================
-*/
-table.tips td,
-.sudoku-wrapper td.empty {
-    cursor: pointer;
+.sudoku-wrapper td.empty:hover,
+.tips-wrapper td:hover {
+    background-color: #bb9d79;
+    color: #232b2e;
 }
 
-table.tips td:hover,
 .sudoku-wrapper td.empty:hover {
-    background-color: #eee;
-}
-
-table.tips td:active,
-.sudoku-wrapper td.empty.active {
-    background-color: #ddd;
-}
-
-table.tips {
-    width: 100px;
-    float: left;
-    margin: 60px;
-}
-
-table.tips td {
-    vertical-align: middle;
-    text-align: center;
-    transition: all 0.3s;
+    color: #f6d09f;
 }

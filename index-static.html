@@ -21,33 +21,42 @@
 </head>
 
 <body>
+
 <div class="clearfix wrapper">
+
     <div class="sudoku-wrapper"></div>
 
-    <table class="table table-bordered tips">
-        <tr>
-            <td>1</td>
-            <td>2</td>
-            <td>3</td>
-            <td>4</td>
-            <td>5</td>
-            <td>6</td>
-            <td>7</td>
-            <td>8</td>
-            <td>9</td>
-        </tr>
-    </table>
+    <div class="tips-wrapper">
+        <table class="table">
+            <tr>
+                <td>1</td>
+                <td>2</td>
+                <td class="br">3</td>
+                <td>4</td>
+                <td>5</td>
+                <td class="br">6</td>
+                <td>7</td>
+                <td>8</td>
+                <td>9</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="toolbar">
+            <!-- clear -->
+            <!-- clear one -->
+            <!-- auto one step -->
+    </div>
+
 </div>
-<button type="button" id="calculate"> Calculate</button>
-<button type="button" id="calculate-manually"> Calculate one Step</button>
 
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 <script src="js/jquery.min.js"></script>
 <script src="js/underscore.js"></script>
 <!-- Include all compiled plugins (below), or include individual files as needed -->
 <script src="js/bootstrap.min.js"></script>
-<!--<script src="js/main.js"></script>-->
 <script src="js/builder.js"></script>
+
 </body>
 
 </html>

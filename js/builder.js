@@ -2,11 +2,10 @@
 
     var OkuBuilder = function (sudoku) {
         this.sudoku = sudoku;
-        this.highlightBoxs = [0,2,4,6,8];
     };
 
     OkuBuilder.prototype.render = function () {
-        var $table = $('<table class="table table-bordered"></table>');
+        var $table = $('<table class="table"></table>');
 
         _.each(this.sudoku, function (row, i) {
             var $row = $('<tr></tr>');
@@ -37,8 +36,12 @@
             $td.addClass('original');
         }
 
-        if (this.shouldHighlight(box)) {
-            $td.addClass('highlight');
+        if (x === 2 || x === 5) {
+            $td.addClass('br');
+        }
+
+        if (y === 2 || y === 5) {
+            $td.addClass('bb');
         }
 
         $td.text(number);
@@ -46,7 +49,7 @@
     };
 
     OkuBuilder.prototype.shouldHighlight = function (box) {
-        return _.contains(this.highlightBoxs, box);
+        //return _.contains(this.highlightBoxs, box);
     };
 
     /**
@@ -66,8 +69,8 @@
         $('.sudoku-wrapper td').each(function() {
             var $this = $(this);
             var curData = $this.data();
-            if (curData.x === data.x || curData.y === data.y || curData.box === data.box) {
-                $this.addClass('active-related');
+            if (curData.x === data.x || curData.y === data.y) {
+                $this.addClass('highlight');
             }
         });
     };
@@ -77,22 +80,24 @@
         $(document).on('click', function() {
             $('.sudoku-wrapper td')
                 .removeClass('active')
-                .removeClass('active-related');
+                .removeClass('highlight');
         });
 
         $('.sudoku-wrapper').on('click', 'td.empty', function () {
             var $this = $(this);
 
-            $this.parents('table').find('td')
-                .removeClass('active')
-                .removeClass('active-related');
+            $this.parents('table')
+                 .find('td')
+                 .removeClass('active')
+                 .removeClass('highlight');
+
             self.markRelated($this.data());
             $this.addClass('active');
 
             return false;
         });
 
-        $('.tips').on('click', 'td', function () {
+        $('.tips-wrapper').on('click', 'td', function () {
             var $this = $(this);
             var $active = $('.sudoku-wrapper td.active');
             $active.text($this.text());
