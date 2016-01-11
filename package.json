@@ -21,6 +21,7 @@
   "homepage": "https://github.com/ochukai/oli-sudoku#readme",
   "dependencies": {
     "jquery": "^2.1.4",
+    "line-reader": "^0.3.0",
     "underscore": "^1.8.3"
   }
 }
